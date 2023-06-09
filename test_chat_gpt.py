@@ -1,7 +1,7 @@
 import openai
 import os
 import ast
-# import win32com.client
+import win32com.client
 import datetime
 
 openai.api_key = os.getenv("CHAT_GPT_API_KEY")
@@ -101,5 +101,5 @@ def create_mpp_file(response_string):
 if __name__ == '__main__':
     user_prompt = get_details_from_user()
     gpt_reponse = get_response_from_ChatGPT(user_prompt)
-    
+
     create_mpp_file(gpt_reponse)
