@@ -90,16 +90,16 @@ def create_mpp_file(response_string):
     Project_App.Quit()
 
 
-# test_output = """[['Task name', 'Duration', 'Start date', 'End date'],
-# ['Site Preparation', 2, 'Jul 1, 2021', 'Jul 2, 2021'],
-# ['Foundation', 7, 'Jul 5, 2021', 'Jul 13, 2021'],
-# ['Brickwork', 14, 'Jul 14, 2021', 'Jul 30, 2021'],
-# ['Door Installation', 2, 'Aug 2, 2021', 'Aug 3, 2021'],
-# ['Window Installation', 2, 'Aug 4, 2021', 'Aug 5, 2021'],
-# ['Painting', 5, 'Aug 6, 2021', 'Aug 12, 2021']]"""
+test_output = """[['Task name', 'Duration', 'Start date', 'End date'],
+['Site Preparation', 2, 'Jul 1, 2021', 'Jul 2, 2021'],
+['Foundation', 7, 'Jul 5, 2021', 'Jul 13, 2021'],
+['Brickwork', 14, 'Jul 14, 2021', 'Jul 30, 2021'],
+['Door Installation', 2, 'Aug 2, 2021', 'Aug 3, 2021'],
+['Window Installation', 2, 'Aug 4, 2021', 'Aug 5, 2021'],
+['Painting', 5, 'Aug 6, 2021', 'Aug 12, 2021']]"""
 
 if __name__ == '__main__':
-    user_prompt = get_details_from_user()
-    gpt_reponse = get_response_from_ChatGPT(user_prompt)
-
-    create_mpp_file(gpt_reponse)
+    # user_prompt = get_details_from_user()
+    gpt_reponse = get_response_from_ChatGPT("hello")
+    print(gpt_reponse)
+    create_mpp_file(test_output)
