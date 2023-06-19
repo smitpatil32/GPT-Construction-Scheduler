@@ -8,7 +8,7 @@ openai.api_key = os.getenv("CHAT_GPT_API_KEY")
 
 
 def get_details_from_user():
-    main_string = "With the following 'construction details information' create a schedule for the construction project described. The schedule should include a start date and an end date and breakdown the construction project into specific tasks and mention the time allocated for each task in days. Your response should only represent the schedule in a tabular form. The table should contain following columns in this specific order - Task name, Duration, Start date, end date. As an example: Site Preparation | 2 | Mar 23, 2020 | Mar 25, 2020|. I do not want any citations or explanations. "
+    main_string = "With the following 'construction details information' create a schedule for the construction project described. The schedule should include a start date and an end date and breakdown the construction project into specific tasks and mention the time allocated for each task in days. Your response should only represent the schedule in a in a list of lists format. each list inside the main list should contain following columns in this specific order - [Task name, Duration, Start date, end date]. As an example: [Site Preparation, 2 , Mar 23, 2020 , Mar 25, 2020]. I do not want any citations or explanations. "
     details_str = ""
     prjname = input("Project Name: ")
     details_str += f"Project Name: {prjname}; "
