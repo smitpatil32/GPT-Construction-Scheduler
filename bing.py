@@ -37,6 +37,7 @@ api_key = os.get("CHAT_GPT_API_KEY")
 #         'WLS':	'C=c3fa2fa4dfa5654d&N=trivikram'
 #     }
 
+
 def extract_cookies():
     cookies = {}
     with open("cookie.txt", "r") as f:
@@ -48,6 +49,7 @@ def extract_cookies():
                 cookies[key] = value
     return cookies
 
+
 def get_details_from_user():
 
     details_str = ""
@@ -55,17 +57,20 @@ def get_details_from_user():
     details_str += f"Project Name: {prjname}; "
     location = input("Project Location: ")
     details_str += f"Project Location: {location}; "
-    projtype = input("Project Type (e.g., residential, commercial, industrial): ")
+    projtype = input(
+        "Project Type (e.g., residential, commercial, industrial): ")
     details_str += f"Project Type: {projtype}; "
     dimensions = input("Dimensions (length x width x height, in meters): ")
     details_str += f"Dimensions (length x width x height, in meters): {dimensions}; "
-    material = input("Type of Construction Material (e.g., brick, concrete, wood): ")
+    material = input(
+        "Type of Construction Material (e.g., brick, concrete, wood): ")
     details_str += f"Type of Construction Material (e.g., brick, concrete, wood): {material}; "
     wallthickness = input("Wall Thickness (in meters): ")
     details_str += f"Wall Thickness (in meters): {wallthickness}; "
     numdoors = input("Number of Doors: ")
     details_str += f"Number of Doors: {numdoors}; "
-    doordim = input("Door Dimensions (width x height x thickness, in meters): ")
+    doordim = input(
+        "Door Dimensions (width x height x thickness, in meters): ")
     details_str += f"Door Dimensions (width x height x thickness, in meters): {doordim}; "
     doortype = input("Type of Door (e.g., wooden, metal, glass): ")
     details_str += f"Type of Door (e.g., wooden, metal, glass): {doortype}; "
@@ -73,7 +78,8 @@ def get_details_from_user():
     details_str += f"Number of Windows: {numwindows}; "
     windowdim = input("Window Dimensions (width x height, in meters): ")
     details_str += f"Window Dimensions (width x height, in meters): {windowdim}; "
-    windowtype = input("Type of Window (e.g., sliding, casement, double-hung): ")
+    windowtype = input(
+        "Type of Window (e.g., sliding, casement, double-hung): ")
     details_str += f"Type of Window (e.g., sliding, casement, double-hung): {windowtype}; "
     painttype = input("Paint Type and Color: ")
     details_str += f"Paint Type and Color: {painttype}; "
@@ -90,8 +96,9 @@ def get_details_from_user():
 
     return details_str
 
-if __name__ == "__main__":
-    
+
+def main_bing():
+
     query_string = "With the following 'construction details information' create a schedule for the construction project described. The schedule should include a start date and an end date and breakdown the construction project into specific tasks and mention the time allocated for each task in days. Your response should only represent the schedule in a tabular form. The table should contain following columns in this specific order - Task name, Duration, Start date, end date. As an example: Site Preparation | 2 | Mar 23, 2020 | Mar 25, 2020|. I do not want any citations or explanations. "
     query_string += get_details_from_user()
     # query_string += "Project Name: Sample project; Project Location: Indiana; Project Type (e.g., residential, commercial, industrial): Residential; Dimensions (length x width x height, in meters): 4.2 x 4.2 x 4.2; Type of Construction Material (e.g., brick, concrete, wood): Brick Masonary; Wall Thickness (in meters): 0.20; Number of Doors: 1; Door Dimensions (width x height x thickness, in meters): 1 x 2 x 0.20; Type of Door (e.g., wooden, metal, glass): Wooden; Number of Windows (if any): 2; Window Dimensions (width x height, in meters):  2 x 1 ; Type of Window (e.g., sliding, casement, double-hung): Fixed Window; Paint Type and Color: Flat Paint White; Paint Thickness (in millimeters): 10 ; Ceiling and Roof Required (Yes/No): Yes; Electrical Work Required (Yes/No): No; Plumbing Work Required (Yes/No): No; Project Deadline (in weeks): None"
@@ -104,9 +111,11 @@ if __name__ == "__main__":
     # print(result)
 
     # Index, Taskname, duration, startdate, enddate
-    matcher1 = re.compile(r'\| ([0-9]+) \| ([A-Za-z\s]+) \| ([0-9]+) \| ([A-Za-z0-9,\s]+) \| ([A-Za-z0-9,\s]+)')
+    matcher1 = re.compile(
+        r'\| ([0-9]+) \| ([A-Za-z\s]+) \| ([0-9]+) \| ([A-Za-z0-9,\s]+) \| ([A-Za-z0-9,\s]+)')
     # Taskname, duration, startdate, enddate
-    matcher2 = re.compile(r'\| ([A-Za-z\s]+) \| ([0-9]+) \| ([A-Za-z0-9,\s]+) \| ([A-Za-z0-9,\s]+)')
+    matcher2 = re.compile(
+        r'\| ([A-Za-z\s]+) \| ([0-9]+) \| ([A-Za-z0-9,\s]+) \| ([A-Za-z0-9,\s]+)')
 
     tasks = []
     result_lines = result.split("\n")
@@ -144,7 +153,8 @@ if __name__ == "__main__":
     start_date = datetime.datetime.now()
     for i, task in enumerate(tasks):
         task_name = task["name"]
-        duration = task["duration"] #* 1440  # Convert duration to minutes (1 day = 1440 minutes)
+        # * 1440  # Convert duration to minutes (1 day = 1440 minutes)
+        duration = task["duration"]
         new_task = new_project.Tasks.Add(task_name)
         new_task.Duration = duration
         new_task.Manual = False  # Set the task as auto-scheduled
@@ -154,7 +164,7 @@ if __name__ == "__main__":
             new_task.Predecessors = str(new_project.Tasks(i).ID)
 
     # Check if the folder exists and create it if necessary
-    folder_path = "D:\My Files\Courses\Spring 2023\Automation in Construction\Framework for Automation\Trivi" #"D:\\sad\\"
+    folder_path = "D:\My Files\Courses\Spring 2023\Automation in Construction\Framework for Automation\Trivi"  # "D:\\sad\\"
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
 
@@ -167,3 +177,7 @@ if __name__ == "__main__":
 
     # Close the project using app.FileClose()
     app.FileClose()
+
+
+if __name__ == "__main__":
+    main_bing()
