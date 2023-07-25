@@ -104,7 +104,7 @@ test_output = """[['Task name', 'Duration', 'Start date', 'End date'],
 ['Painting', 5, 'Aug 6, 2021', 'Aug 12, 2021']]"""
 
 if __name__ == '__main__':
-    user_prompt = get_details_from_user()
-    gpt_reponse = get_response_from_ChatGPT(user_prompt)
+    # user_prompt = get_details_from_user()
+    # gpt_reponse = get_response_from_ChatGPT(user_prompt)
     #print(gpt_reponse)
-    create_mpp_file(gpt_reponse)
+    create_mpp_file(test_output)
