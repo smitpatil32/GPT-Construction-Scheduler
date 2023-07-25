@@ -55,6 +55,7 @@ def get_details_from_user():
 
 
 def get_response_from_ChatGPT(prompt):
+    print("\nasking ChatGPT...")
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -62,14 +63,16 @@ def get_response_from_ChatGPT(prompt):
             {"role": "user", "content": prompt},
         ]
     )
+    print("\nGot response from ChatGPT!")
     return response.choices[0].message.content
 
 
 def create_mpp_file(response_string):
     # Create a list from the given chatgpt output
+    print("\nCreating .MPP file")
     tasks_list = ast.literal_eval(response_string)
 
-    project_name = input("Enter the Project Name: ")
+    project_name = input("\nEnter the Project Name: ")
     project_name += "_"+datetime.datetime.now().strftime('%m-%d-%y_%H-%M-%p')
 
     # Initialize the MS Project App
@@ -77,7 +80,8 @@ def create_mpp_file(response_string):
     Project_App.Visible = True
     pj = Project_App.Projects.Add()
 
-    for task in tasks_list[1:]:
+    for i,task in enumerate(tasks_list[1:]):
+        print(f"creating task {i}")
         startdate = datetime.datetime.strptime(task[2], "%b %d, %Y")
         enddate = datetime.datetime.strptime(task[3], "%b %d, %Y")
         duration = task[1]
@@ -86,6 +90,7 @@ def create_mpp_file(response_string):
         task_adder.Start = startdate
         task_adder.Finish = enddate
 
+    print(f"\nsaving project as {project_name}.mpp")
     pj.SaveAs(os.path.join(os.getcwd(), f"{project_name}.mpp"))
     Project_App.Quit()
 
@@ -102,4 +107,4 @@ if __name__ == '__main__':
     user_prompt = get_details_from_user()
     gpt_reponse = get_response_from_ChatGPT(user_prompt)
     #print(gpt_reponse)
-    create_mpp_file(test_output)
+    create_mpp_file(gpt_reponse)

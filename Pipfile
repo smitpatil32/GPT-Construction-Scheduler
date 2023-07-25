@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 openai = "*"
 pywin32 = "*"
+pyinstaller = "*"
 
 [dev-packages]
 
