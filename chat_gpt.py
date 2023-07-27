@@ -3,8 +3,12 @@ import os
 import ast
 import win32com.client
 import datetime
+import win32timezone
+from time import sleep
 
-openai.api_key = os.getenv("CHAT_GPT_API_KEY")
+API_KEY = input("input your api key: ")
+
+openai.api_key = API_KEY
 
 
 def get_details_from_user():
@@ -58,29 +62,31 @@ def get_response_from_ChatGPT(prompt):
     print("\nasking ChatGPT...")
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
+
         messages=[
             {"role": "system", "content": "You are an expert construciton project scheduler."},
             {"role": "user", "content": prompt},
         ]
     )
-    print("\nGot response from ChatGPT!")
+    print("\nGot response from ChatGPT!:")
+    print(response.choices[0].message.content)
     return response.choices[0].message.content
 
 
 def create_mpp_file(response_string):
     # Create a list from the given chatgpt output
     print("\nCreating .MPP file")
-    tasks_list = ast.literal_eval(response_string)
+    tasks_list = eval(response_string)
 
     project_name = input("\nEnter the Project Name: ")
-    project_name += "_"+datetime.datetime.now().strftime('%m-%d-%y_%H-%M-%p')
+    project_name += "_"+datetime.datetime.now().strftime('%m-%d_%H-%M-%p')
 
     # Initialize the MS Project App
     Project_App = win32com.client.Dispatch("MSProject.Application")
     Project_App.Visible = True
     pj = Project_App.Projects.Add()
 
-    for i,task in enumerate(tasks_list[1:]):
+    for i, task in enumerate(tasks_list[1:]):
         print(f"creating task {i}")
         startdate = datetime.datetime.strptime(task[2], "%b %d, %Y")
         enddate = datetime.datetime.strptime(task[3], "%b %d, %Y")
@@ -92,6 +98,7 @@ def create_mpp_file(response_string):
 
     print(f"\nsaving project as {project_name}.mpp")
     pj.SaveAs(os.path.join(os.getcwd(), f"{project_name}.mpp"))
+    # print(f'\nsaved as {os.path.dirname(os.path.join(os.getcwd(),"output", f"{project_name}.mpp"))}')
     Project_App.Quit()
 
 
@@ -104,7 +111,24 @@ test_output = """[['Task name', 'Duration', 'Start date', 'End date'],
 ['Painting', 5, 'Aug 6, 2021', 'Aug 12, 2021']]"""
 
 if __name__ == '__main__':
-    # user_prompt = get_details_from_user()
-    # gpt_reponse = get_response_from_ChatGPT(user_prompt)
-    #print(gpt_reponse)
-    create_mpp_file(test_output)
+    user_prompt = get_details_from_user()
+#     user_prompt = """With the following 'construction details information' create a schedule for the construction project described. The schedule should include a start date and an end date and breakdown the construction project into specific tasks and mention the time allocated for each task in days. Your response should only represent the schedule in a in a list of lists format. each list inside the main list should contain following columns in this specific order - [Task name, Duration, Start date, end date]. As an example: [Site Preparation, 2 , Mar 23, 2020 , Mar 25, 2020]. I do not want any citations or explanations.  Project Name Sample
+# Location Indiana 
+# Type: Residential 
+# Type of Construction Material (e.g., brick, concrete, wood) Brick and Mortar
+# Wall Thickness (in meters): 0.20
+# Number of Doors: 1
+# Door Dimensions (width x height x thickness, in meters): 2 x 1 x 0.20
+# Type of Door (e.g., wooden, metal, glass): Wooden
+# Number of Windows (if any): 2
+# Window Dimensions (width x height, in meters) 1 x 1
+# Type of Window (e.g., sliding, casement, double-hung): Fixed
+# Paint Type and Color: Flat and White 
+# Paint Thickness (in millimeters): 2
+# Ceiling and Roof Required (Yes/No): Yes
+# Electrical Work Required (Yes/No): No
+# Plumbing Work Required (Yes/No): No
+# Project Deadline (in weeks): None"""
+    gpt_reponse = get_response_from_ChatGPT(user_prompt)
+    # # print(gpt_reponse)
+    create_mpp_file(gpt_reponse)
