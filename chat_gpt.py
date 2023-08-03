@@ -5,14 +5,20 @@ import win32com.client
 import datetime
 import win32timezone
 from time import sleep
+from getpass import getpass
 
-API_KEY = input("input your api key: ")
+if os.getenv('CHAT_GPT_API_KEY') is None:
+    API_KEY = getpass("Input your API key: ")
+    openai.api_key = API_KEY
 
-openai.api_key = API_KEY
+    with open(".env", "a") as file:
+        file.write(f"CHAT_GPT_API_KEY={API_KEY}\n")
+else:
+    openai.api_key = os.getenv('CHAT_GPT_API_KEY')
 
 
 def get_details_from_user():
-    main_string = "With the following 'construction details information' create a schedule for the construction project described. The schedule should include a start date and an end date and breakdown the construction project into specific tasks and mention the time allocated for each task in days. Your response should only represent the schedule in a in a list of lists format. each list inside the main list should contain following columns in this specific order - [Task name, Duration, Start date, end date]. As an example: [Site Preparation, 2 , Mar 23, 2020 , Mar 25, 2020]. I do not want any citations or explanations. "
+    main_string = """With the following 'construction details information' create a schedule for the construction project described. The schedule should include a start date and an end date and breakdown the construction project into specific tasks and mention the time allocated for each task in days. Your response should only represent the schedule in a in a list of lists format. each list inside the main list should contain following columns in this specific order - [Task name, Duration, Start date, end date, predecessor]. The first row should be the title row. and the following rows should contain the data. The "Predecessors" property expects a string where tasks are identified by their ID number and separated by a comma. For example, if task 3 and 5 are predecessors to task 6, it would look like this: "3,5". I do not want any citations or explanations. Use the current date and time for the schedule that you create."""
     details_str = ""
     prjname = input("Project Name: ")
     details_str += f"Project Name: {prjname}; "
@@ -95,7 +101,9 @@ def create_mpp_file(response_string):
         task_adder.Duration = duration
         task_adder.Start = startdate
         task_adder.Finish = enddate
-        # task_adder.Predecessors = task[4]
+        if task[4]:  # Assuming 4th index contains the predecessors
+        # Assign predecessors.
+            task_adder.Predecessors = task[4]
 
     print(f"\nsaving project as {project_name}.mpp")
     pj.SaveAs(os.path.join(os.getcwd(), f"{project_name}.mpp"))
@@ -113,11 +121,11 @@ test_output = """[['Task name', 'Duration', 'Start date', 'End date'],
 
 if __name__ == '__main__':
     # user_prompt = get_details_from_user()
-    user_prompt = """With the following 'construction details information' create a schedule for the construction project described. The schedule should include a start date and an end date and breakdown the construction project into specific tasks and mention the time allocated for each task in days. Your response should only represent the schedule in a in a list of lists format. each list inside the main list should contain following columns in this specific order - [Task name, Duration, Start date, end date, predecessor]. As an example: [Site Preparation, 2 , Mar 23, 2020 , Mar 25, 2020, 0]. I do not want any citations or explanations. Use the current date and time for the schedule that you create.
+    user_prompt = """With the following 'construction details information' create a schedule for the construction project described. The schedule should include a start date and an end date and breakdown the construction project into specific tasks and mention the time allocated for each task in days. Your response should only represent the schedule in a in a list of lists format. each list inside the main list should contain following columns in this specific order - [Task name, Duration, Start date, end date, predecessor]. The first row should be the title row. and the following rows should contain the data. The "Predecessors" property expects a string where tasks are identified by their ID number and separated by a comma. For example, if task 3 and 5 are predecessors to task 6, it would look like this: "3,5". I do not want any citations or explanations. Use the current date and time for the schedule that you create.
  Project Name Sample
 # Location Indiana 
 # Type: Residential 
-# Start Date : Jul 26, 2023
+# Start Date (e.g., Jul 26, 2023): Jul 26, 2023
 # Type of Construction Material (e.g., brick, concrete, wood) Brick and Mortar
 # Wall Thickness (in meters): 0.20
 # Number of Doors: 1
@@ -134,4 +142,13 @@ if __name__ == '__main__':
 # Project Deadline (in weeks): None"""
     gpt_reponse = get_response_from_ChatGPT(user_prompt)
     # # print(gpt_reponse)
+#     gpt_reponse = """[['Task name', 'Duration', 'Start date', 'End date', 'Predecessors'],
+# ['Site preparation', 3, 'Jul 26, 2023', 'Jul 29, 2023', ''],
+# ['Foundation construction', 5, 'Jul 30, 2023', 'Aug 3, 2023', '1'],
+# ['Wall construction', 10, 'Aug 4, 2023', 'Aug 15, 2023', '2'],
+# ['Door installation', 2, 'Aug 16, 2023', 'Aug 17, 2023', '3'],
+# ['Window installation', 2, 'Aug 16, 2023', 'Aug 17, 2023', '3'],
+# ['Painting', 5, 'Aug 18, 2023', 'Aug 22, 2023', '4,5'],
+# ['Ceiling and roof installation', 7, 'Aug 23, 2023', 'Aug 29, 2023', '6'],
+# ['Final inspection and cleanup', 2, 'Aug 30, 2023', 'Aug 31, 2023', '7']]"""
     create_mpp_file(gpt_reponse)
