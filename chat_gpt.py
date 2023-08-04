@@ -6,20 +6,33 @@ import datetime
 import win32timezone
 from time import sleep
 from getpass import getpass
+import json
 
-if os.getenv('CHAT_GPT_API_KEY') is None:
+# Try to load API key from json file
+try:
+    with open('api_key.json', 'r') as file:
+        data = json.load(file)
+        openai.api_key = data.get('CHAT_GPT_API_KEY')
+except (FileNotFoundError, KeyError):
+    pass
+
+# If API key is not found, ask for input
+if openai.api_key is None:
     API_KEY = getpass("Input your API key: ")
-    openai.api_key = API_KEY
+
+    # Provide asterisks as feedback after user input
     print("API key received: " + "*" * len(API_KEY))
 
-    with open(".env", "a") as file:
-        file.write(f"CHAT_GPT_API_KEY={API_KEY}\n")
-else:
-    openai.api_key = os.getenv('CHAT_GPT_API_KEY')
+    # Save API key into json file
+    with open('api_key.json', 'w') as file:
+        json.dump({'CHAT_GPT_API_KEY': API_KEY}, file)
+
+    openai.api_key = API_KEY
+
 
 
 def get_details_from_user():
-    main_string = """With the following 'construction details information' create a schedule for the construction project described. The schedule should include a start date and an end date and breakdown the construction project into specific tasks and mention the time allocated for each task in days. Your response should only represent the schedule in a in a list of lists format. each list inside the main list should contain following columns in this specific order - [Task name, Duration, Start date, end date, predecessor]. The first row should be the title row. and the following rows should contain the data. The "Predecessors" property expects a string where tasks are identified by their ID number and separated by a comma. For example, if task 3 and 5 are predecessors to task 6, it would look like this: "3,5". I do not want any citations or explanations. Use the current date and time for the schedule that you create."""
+    main_string = """With the following 'construction details information' create a schedule for the construction project described. The schedule should include a start date and an end date and breakdown the construction project into specific tasks and mention the time allocated for each task in days. Your response should only represent the schedule in a in a list of lists format. each list inside the main list should contain following columns in this specific order - [Task name, Duration, Start date, end date, predecessor]. The first row should be the title row. and the following rows should contain the data. The "Predecessors" property expects a string where tasks are identified by their ID number and separated by a comma. For example, if task 3 and 5 are predecessors to task 6, it would look like this: "3,5". In addition, you cannot make a task a predecessor of itself. I do not want any citations or explanations. Use the current date and time for the schedule that you create."""
     details_str = ""
     prjname = input("Project Name: ")
     details_str += f"Project Name: {prjname}; "
@@ -30,6 +43,8 @@ def get_details_from_user():
     details_str += f"Project Type: {projtype}; "
     dimensions = input("Dimensions (length x width x height, in meters): ")
     details_str += f"Dimensions (length x width x height, in meters): {dimensions}; "
+    start_date = input("Start Date (e.g., Jul 26, 2023): ")
+    details_str +=f"Start Date (e.g., Jul 26, 2023): {start_date}; "
     material = input(
         "Type of Construction Material (e.g., brick, concrete, wood): ")
     details_str += f"Type of Construction Material (e.g., brick, concrete, wood): {material}; "
@@ -69,12 +84,23 @@ def get_response_from_ChatGPT(prompt):
     print("\nasking ChatGPT...")
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-
         messages=[
-            {"role": "system", "content": "You are an expert construciton project scheduler."},
-            {"role": "user", "content": prompt},
-        ]
+            {
+                "role": "system",
+                "content": "You are an expert Construction Project Manager who specializes in breaking down a project into its consequent project activities and schedule them to create a realistic schedule for the construction project to be completed in optimal time."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0.7,
+        max_tokens=1024,
+        top_p=0.8,
+        frequency_penalty=0,
+        presence_penalty=0
     )
+
     print("\nGot response from ChatGPT!:")
     print(response.choices[0].message.content)
     return response.choices[0].message.content
@@ -86,7 +112,7 @@ def create_mpp_file(response_string):
     tasks_list = eval(response_string)
 
     project_name = input("\nEnter the Project Name: ")
-    project_name += "_"+datetime.datetime.now().strftime('%m-%d_%H-%M-%p')
+    # project_name += "_"+datetime.datetime.now().strftime('%m-%d_%H-%M-%p')
 
     # Initialize the MS Project App
     Project_App = win32com.client.Dispatch("MSProject.Application")
@@ -103,7 +129,7 @@ def create_mpp_file(response_string):
         task_adder.Start = startdate
         task_adder.Finish = enddate
         if task[4]:  # Assuming 4th index contains the predecessors
-        # Assign predecessors.
+            # Assign predecessors.
             task_adder.Predecessors = task[4]
 
     print(f"\nsaving project as {project_name}.mpp")
@@ -112,44 +138,47 @@ def create_mpp_file(response_string):
     Project_App.Quit()
 
 
-test_output = """[['Task name', 'Duration', 'Start date', 'End date'],
-['Site Preparation', 2, 'Jul 1, 2021', 'Jul 2, 2021'],
-['Foundation', 7, 'Jul 5, 2021', 'Jul 13, 2021'],
-['Brickwork', 14, 'Jul 14, 2021', 'Jul 30, 2021'],
-['Door Installation', 2, 'Aug 2, 2021', 'Aug 3, 2021'],
-['Window Installation', 2, 'Aug 4, 2021', 'Aug 5, 2021'],
-['Painting', 5, 'Aug 6, 2021', 'Aug 12, 2021']]"""
+test_output = """[['Task name', 'Duration', 'Start date', 'End date', 'Predecessor'],
+ ['Site Preparation', 2, 'Jul 26, 2023', 'Jul 27, 2023', ''],
+ ['Foundation Construction', 5, 'Jul 28, 2023', 'Aug 2, 2023', '1'],
+ ['Wall Construction', 5, 'Aug 3, 2023', 'Aug 8, 2023', '2'],
+ ['Door Installation', 2, 'Aug 9, 2023', 'Aug 10, 2023', '3'],
+ ['Window Installation', 2, 'Aug 11, 2023', 'Aug 12, 2023', '4'],
+ ['Painting', 3, 'Aug 13, 2023', 'Aug 15, 2023', '5'],
+ ['Ceiling and Roof Construction', 4, 'Aug 16, 2023', 'Aug 19, 2023', '6'],
+ ['Project Completion', 0, 'Aug 19, 2023', 'Aug 19, 2023', '7']]"""
 
 if __name__ == '__main__':
-    # user_prompt = get_details_from_user()
-#     user_prompt = """With the following 'construction details information' create a schedule for the construction project described. The schedule should include a start date and an end date and breakdown the construction project into specific tasks and mention the time allocated for each task in days. Your response should only represent the schedule in a in a list of lists format. each list inside the main list should contain following columns in this specific order - [Task name, Duration, Start date, end date, predecessor]. The first row should be the title row. and the following rows should contain the data. The "Predecessors" property expects a string where tasks are identified by their ID number and separated by a comma. For example, if task 3 and 5 are predecessors to task 6, it would look like this: "3,5". I do not want any citations or explanations. Use the current date and time for the schedule that you create.
-#  Project Name Sample
-# # Location Indiana 
-# # Type: Residential 
-# # Start Date (e.g., Jul 26, 2023): Jul 26, 2023
-# # Type of Construction Material (e.g., brick, concrete, wood) Brick and Mortar
-# # Wall Thickness (in meters): 0.20
-# # Number of Doors: 1
-# # Door Dimensions (width x height x thickness, in meters): 2 x 1 x 0.20
-# # Type of Door (e.g., wooden, metal, glass): Wooden
-# # Number of Windows (if any): 2
-# # Window Dimensions (width x height, in meters) 1 x 1
-# # Type of Window (e.g., sliding, casement, double-hung): Fixed
-# # Paint Type and Color: Flat and White 
-# # Paint Thickness (in millimeters): 2
-# # Ceiling and Roof Required (Yes/No): Yes
-# # Electrical Work Required (Yes/No): No
-# # Plumbing Work Required (Yes/No): No
-# # Project Deadline (in weeks): None"""
-    # gpt_reponse = get_response_from_ChatGPT(user_prompt)
+    user_prompt = get_details_from_user()
+    #     user_prompt = """With the following 'construction details information' create a schedule for the construction project described. The schedule should include a start date and an end date and breakdown the construction project into specific tasks and mention the time allocated for each task in days. Your response should only represent the schedule in a in a list of lists format. each list inside the main list should contain following columns in this specific order - [Task name, Duration, Start date, end date, predecessor]. The first row should be the title row. and the following rows should contain the data. The "Predecessors" property expects a string where tasks are identified by their ID number and separated by a comma. For example, if task 3 and 5 are predecessors to task 6, it would look like this: "3,5". I do not want any citations or explanations. Use the current date and time for the schedule that you create.
+    #  Project Name Sample
+    # # Location Indiana
+    # # Type: Residential
+    # Dimensions (length x width x height, in meters): 4 x 4
+    # # Start Date (e.g., Jul 26, 2023): Jul 26, 2023
+    # # Type of Construction Material (e.g., brick, concrete, wood) Brick and Mortar
+    # # Wall Thickness (in meters): 0.20
+    # # Number of Doors: 1
+    # # Door Dimensions (width x height x thickness, in meters): 2 x 1 x 0.20
+    # # Type of Door (e.g., wooden, metal, glass): Wooden
+    # # Number of Windows (if any): 2
+    # # Window Dimensions (width x height, in meters) 1 x 1
+    # # Type of Window (e.g., sliding, casement, double-hung): Fixed
+    # # Paint Type and Color: Flat and White
+    # # Paint Thickness (in millimeters): 2
+    # # Ceiling and Roof Required (Yes/No): Yes
+    # # Electrical Work Required (Yes/No): No
+    # # Plumbing Work Required (Yes/No): No
+    # # Project Deadline (in weeks): None"""
+    gpt_reponse = get_response_from_ChatGPT(user_prompt)
     # print(gpt_reponse)
-    gpt_reponse = """[['Task name', 'Duration', 'Start date', 'End date', 'Predecessors'],
-['Site preparation', 3, 'Jul 26, 2023', 'Jul 29, 2023', ''],
-['Foundation construction', 5, 'Jul 30, 2023', 'Aug 3, 2023', '1'],
-['Wall construction', 10, 'Aug 4, 2023', 'Aug 15, 2023', '2'],
-['Door installation', 2, 'Aug 16, 2023', 'Aug 17, 2023', '3'],
-['Window installation', 2, 'Aug 16, 2023', 'Aug 17, 2023', '3'],
-['Painting', 5, 'Aug 18, 2023', 'Aug 22, 2023', '4,5'],
-['Ceiling and roof installation', 7, 'Aug 23, 2023', 'Aug 29, 2023', '6'],
-['Final inspection and cleanup', 2, 'Aug 30, 2023', 'Aug 31, 2023', '7']]"""
+#     gpt_reponse = """[['Task name', 'Duration', 'Start date', 'End date', 'Predecessor'],
+# ['Site Preparation', 1, 'Jul 26, 2023', 'Jul 27, 2023', ''],
+# ['Foundation Construction', 5, 'Jul 28, 2023', 'Aug 1, 2023', '1'],
+# ['Wall Construction', 5, 'Aug 2, 2023', 'Aug 6, 2023', '2'],
+# ['Door Installation', 1, 'Aug 7, 2023', 'Aug 8, 2023', '3'],
+# ['Window Installation', 1, 'Aug 7, 2023', 'Aug 8, 2023', '3'],
+# ['Painting', 2, 'Aug 9, 2023', 'Aug 10, 2023', '4,5'],
+# ['Ceiling and Roof Construction', 3, 'Aug 11, 2023', 'Aug 13, 2023', '6'],
+# ['Project Completion', 1, 'Aug 14, 2023', 'Aug 15, 2023', '7']]"""
     create_mpp_file(gpt_reponse)
