@@ -18,7 +18,7 @@ except (FileNotFoundError, KeyError):
 
 # If API key is not found, ask for input
 if openai.api_key is None:
-    API_KEY = getpass("Input your API key: ")
+    API_KEY = input("Input your API key: ")
 
     # Provide asterisks as feedback after user input
     print("API key received: " + "*" * len(API_KEY))
